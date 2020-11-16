@@ -88,70 +88,262 @@ public final class PushBoxSolver {
     
     public void solveGame() {
         // recursively try all four directions for each move
+        solveGameHelper(new Location(player.getX()+1, player.getY())); // send player to the RIGHT
     }
     
-    public void solveGameHelper(Location curr) {
-        Location up, rt, dn, lt;
-        up = new Location(curr.getX()  , curr.getY()-1);
-        rt = new Location(curr.getX()+1, curr.getY()  );
-        dn = new Location(curr.getX()  , curr.getY()+1);
-        lt = new Location(curr.getX()-1, curr.getY()  );
-        
-    }
-    
-    public boolean movePlayer(Location loc1) {
+    /**
+     * This method recursively moves the player around the board until the game is solved
+     * @param l1 next location of the player
+     */
+    public void solveGameHelper(Location l1) {
         // establish direction
-        int xDiff = loc1.getX() - player.getX();
-        int yDiff = loc1.getY() - player.getY();
+        int xDiff = l1.getX() - player.getX();
+        int yDiff = l1.getY() - player.getY();
+        int direction;
         
-        Location loc2, loc3, s1, s2;
+        // l = location in direction of travel; s = sides of l2; d = next directions of travel
+        Location pl, l2, l3, s1, s2, d1, d2;
+        pl = new Location(player.getX(), player.getY());
         
         if(        xDiff == -1 && yDiff ==  0) { // move left
-            loc2 = new Location(loc1.getX()-1, loc1.getY()  );
-            loc3 = new Location(loc2.getX()-1, loc2.getY()  );
-            s1   = new Location(loc2.getX()  , loc2.getY()+1);
-            s2   = new Location(loc2.getX()  , loc2.getY()-1);
+            direction = LEFT;
+            l2 = new Location(l1.getX()-1, l1.getY()  );
+            l3 = new Location(l2.getX()-1, l2.getY()  );
+            s1 = new Location(l2.getX()  , l2.getY()+1);
+            s2 = new Location(l2.getX()  , l2.getY()-1);
+            d1 = new Location(l1.getX()  , l1.getY()+1);
+            d2 = new Location(l1.getX()  , l1.getY()-1);
         } else if (xDiff ==  1 && yDiff ==  0) { // move right
-            loc2 = new Location(loc1.getX()+1, loc1.getY()  );
-            loc3 = new Location(loc2.getX()+1, loc2.getY()  );
-            s1   = new Location(loc2.getX()  , loc2.getY()-1);
-            s2   = new Location(loc2.getX()  , loc2.getY()+1);
+            direction = RIGHT;
+            l2 = new Location(l1.getX()+1, l1.getY()  );
+            l3 = new Location(l2.getX()+1, l2.getY()  );
+            s1 = new Location(l2.getX()  , l2.getY()-1);
+            s2 = new Location(l2.getX()  , l2.getY()+1);
+            d1 = new Location(l1.getX()  , l1.getY()-1);
+            d2 = new Location(l1.getX()  , l1.getY()+1);
         } else if (xDiff ==  0 && yDiff == -1) { // move up
-            loc2 = new Location(loc1.getX()  , loc1.getY()-1);
-            loc3 = new Location(loc2.getX()  , loc2.getY()-1);
-            s1   = new Location(loc2.getX()-1, loc2.getY()  );
-            s2   = new Location(loc2.getX()+1, loc2.getY()  );
+            direction = UP;
+            l2 = new Location(l1.getX()  , l1.getY()-1);
+            l3 = new Location(l2.getX()  , l2.getY()-1);
+            s1 = new Location(l2.getX()-1, l2.getY()  );
+            s2 = new Location(l2.getX()+1, l2.getY()  );
+            d1 = new Location(l1.getX()-1, l1.getY()  );
+            d2 = new Location(l1.getX()+1, l1.getY()  );
         } else if (xDiff ==  0 && yDiff ==  1) { // move down
-            loc2 = new Location(loc1.getX()  , loc1.getY()+1);
-            loc3 = new Location(loc2.getX()  , loc2.getY()+1);
-            s1   = new Location(loc2.getX()+1, loc2.getY()  );
-            s2   = new Location(loc2.getX()-1, loc2.getY()  );
+            direction = DOWN;
+            l2 = new Location(l1.getX()  , l1.getY()+1);
+            l3 = new Location(l2.getX()  , l2.getY()+1);
+            s1 = new Location(l2.getX()+1, l2.getY()  );
+            s2 = new Location(l2.getX()-1, l2.getY()  );
+            d1 = new Location(l1.getX()+1, l1.getY()  );
+            d2 = new Location(l1.getX()-1, l1.getY()  );
         } else {                                 // invalid move
-            return false;
+            return;
         }
         
-        if(isType(loc1, SPACE) || isType(loc1, DEST)) { // move player to empty space
-            
-        } else if(isType(loc1, BOX) && 
-                  isType(loc2, DEST)) {  // push box to destination
-            
-        } else if(isType(loc1, BOX) && 
-                  isType(loc2, SPACE) && 
-                 (isType(loc3, SPACE) || isType(loc3, DEST) || isType(loc3, BOX))) {  // push box to empty space
-            
-        } else if(isType(loc1, BOX) && isType(loc2, SPACE) && isType(s1, SPACE) && isType(s2, SPACE)) { 
-            
-        }
+        /**
+         * _____________________
+         * |    | d1 | s1 |    |
+         * _____________________
+         * | pl | l1 | l2 | l3 |
+         * _____________________
+         * |    | d2 | s2 |    |
+         * _____________________
+         */
         // check if move is valid (no wall, no trap, no loop)
-        // add new configuration to history
-        // add new move to history
-        // move player (and block if applicable) on the gameboard
-        // check if game won (print move history if so)
-        return true;
+        if(isType(l1, SPACE) || isType(l1, DEST)) {         // SITUATION 1: move player to empty space
+            // create new config
+            Configuration config = getNewConfig(l1);
+            
+            // check if new config exists already
+            if(!isPrevConfig(config)) {
+                
+                // add config to history  (linked list)
+                addPrevConfig(config);
+                
+                // add move to history (stack)
+                moveHistory.add(new Move(direction, false));
+                
+                // update new player location on gameboard
+                if(isType(l1, DEST)) {
+                    gameBoard[l1.getY()][l1.getX()] = DPLAYER;
+                } else {
+                    gameBoard[l1.getY()][l1.getX()] = PLAYER;
+                }
+                // update old player location on gameboard
+                if(isType(pl, DPLAYER)) {
+                    gameBoard[pl.getY()][pl.getX()] = DEST;
+                } else {
+                    gameBoard[pl.getY()][pl.getX()] = SPACE;
+                }
+                
+                // update player location
+                player.setXY(l1.getX(), l1.getY());
+                
+                // recursively call the next three directions (searching for a solution)
+                solveGameHelper(d1);
+                solveGameHelper(d2);
+                solveGameHelper(l2);
+                
+                // back out of this direction (i.e. one of the above paths did not result in a solution)
+                
+                // pop move off history (stack)
+                popMoveFromHistory();
+                
+                // revert new player location on gameboard
+                if(isType(l1, DPLAYER)) {
+                    gameBoard[l1.getY()][l1.getX()] = DEST;
+                } else {
+                    gameBoard[l1.getY()][l1.getX()] = SPACE;
+                }
+                // revert old player location on gameboard
+                if(isType(pl, DEST)) {
+                    gameBoard[pl.getY()][pl.getX()] = DPLAYER;
+                } else {
+                    gameBoard[pl.getY()][pl.getX()] = PLAYER;
+                }
+                
+                // revert player location
+                player.setXY(pl.getX(), pl.getY());
+            }
+        } else if((isType(l1, DBOX) || isType(l1, BOX)) && 
+                   isType(l2, DEST)) {                       // SITUATION 2: push box to destination
+            // create new config
+            Configuration config = getNewConfig(l1, l2);
+            
+            // check if new config exists already
+            if(!isPrevConfig(config)) {
+                
+                // add config to history  (linked list)
+                addPrevConfig(config);
+                
+                // add move to history (stack)
+                moveHistory.add(new Move(direction, true));
+                
+                // update new box location on gameboard
+                gameBoard[l2.getY()][l2.getX()] = DBOX;
+                boxesAtDest++;
+                // update new player location on gameboard
+                if(isType(l1, DBOX)) {
+                    gameBoard[l1.getY()][l1.getX()] = DPLAYER;
+                    boxesAtDest--;
+                } else {
+                    gameBoard[l1.getY()][l1.getX()] = PLAYER;
+                }
+                // update old player location on gameboard
+                if(isType(pl, DPLAYER)) {
+                    gameBoard[pl.getY()][pl.getX()] = DEST;
+                } else {
+                    gameBoard[pl.getY()][pl.getX()] = SPACE;
+                }
+                
+                // update player location
+                player.setXY(l1.getX(), l1.getY());
+                // update box location
+                for(Location box : boxes) {
+                    if(box.equals(l1)) {
+                        box.setXY(l2.getX(), l2.getY());
+                        break;
+                    }
+                }
+                
+                // recursively call the next three directions (searching for a solution)
+                solveGameHelper(d1);
+                solveGameHelper(d2);
+                solveGameHelper(l2);
+                
+                // back out of this direction (i.e. one of the above paths did not result in a solution)
+                
+                // pop move off history (stack)
+                moveHistory.add(new Move(direction, true));
+                
+                // revert new box location on gameboard
+                gameBoard[l2.getY()][l2.getX()] = DEST;
+                boxesAtDest--;
+                // revert new player location on gameboard
+                if(isType(l1, DPLAYER)) {
+                    gameBoard[l1.getY()][l1.getX()] = DBOX;
+                    boxesAtDest++;
+                } else {
+                    gameBoard[l1.getY()][l1.getX()] = BOX;
+                }
+                // revert old player location on gameboard
+                if(isType(pl, DEST)) {
+                    gameBoard[pl.getY()][pl.getX()] = DPLAYER;
+                } else {
+                    gameBoard[pl.getY()][pl.getX()] = PLAYER;
+                }
+                
+                // revert player location
+                player.setXY(pl.getX(), pl.getY());
+                // update box location
+                for(Location box : boxes) {
+                    if(box.equals(l2)) {
+                        box.setXY(l1.getX(), l1.getY());
+                        break;
+                    }
+                }
+            }
+        } else if(isType(l1, BOX  ) && 
+                  isType(l2, SPACE) && 
+                 (isType(l3, SPACE) || isType(l3, DEST))) { // SITUATION 3: push box to empty space (with parallel outlet)
+            
+        } else if(isType(l1, BOX  ) && 
+                  isType(l2, SPACE) && 
+                 (isType(s1, SPACE) || isType(s1, DEST)) && 
+                 (isType(s2, SPACE) || isType(s2, DEST))) { // SITUATION 4: push box to empty space (with perpendicular outlet)
+            
+        } else {
+            return;
+        }
+    }
+    
+    /**
+     * Removes the last added move from the history stack
+     * @return True if a box was pushed for the removed move, False otherwise
+     */
+    public boolean popMoveFromHistory() {
+        Move m = moveHistory.pop();
+        if(m.wasBoxPushed()) {
+            return true;
+        }
+        return false;
+    }
+    
+    public Configuration getNewConfig(Location newPlayerLoc) {
+        Configuration newConfig = new Configuration(newPlayerLoc);
+        // add unmoved boxes
+        for(Location box : boxes) {
+            newConfig.addBox(box);
+        }
+        return newConfig;
+    }
+    
+    public Configuration getNewConfig(Location newPlayerLoc, Location newBoxLoc) {
+        Configuration newConfig = new Configuration(newPlayerLoc);
+        // add unmoved boxes
+        for(Location box : boxes) {
+            if(!newPlayerLoc.equals(box)) {
+                newConfig.addBox(box);
+            }
+        }
+        // add moved box
+        newConfig.addBox(newBoxLoc);
+        return newConfig;
     }
     
     public boolean isType(Location loc, int type) {
+        // location off the game board
+        if(loc.getX() >= gameBoard[0].length ||
+           loc.getY() >= gameBoard.length    ||
+           loc.getX() <= -1                  ||
+           loc.getY() <= -1) {
+            return false;
+        }
+        
+        // location on the game board
         return gameBoard[loc.getY()][loc.getX()]==type;
+        
     }
     
     public boolean isDestination(Location loc) {
@@ -215,11 +407,11 @@ public final class PushBoxSolver {
     }
     
     public class Configuration {
-        Location player;
-        LinkedList<Location> boxes;
+        private final Location player;
+        private final LinkedList<Location> boxes;
         
         public Configuration(Location player) {
-            this.player = player;
+            this.player = player.clone();
             boxes = new LinkedList<>();
         }
         
@@ -229,7 +421,7 @@ public final class PushBoxSolver {
                     return; // already added
                 }
             }
-            boxes.add(box);
+            boxes.add(box.clone());
         }
         
         public Location getPlayer() {
@@ -264,7 +456,7 @@ public final class PushBoxSolver {
     }
     
     public class Location {
-        int x, y;
+        private int x, y;
         
         public Location(int x, int y) {
             this.x = x;
@@ -287,20 +479,30 @@ public final class PushBoxSolver {
             this.y = y;
         }
         
+        public void setXY(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+        
         public boolean equals(Location loc) {
             return loc.getX() == x && loc.getY() == y;
         }
         
         @Override
+        public Location clone() {
+            return new Location(x, y);
+        }
+        
+        @Override
         public String toString() {
-            return "(" + (x+1) + ", " + (y+1) + ")";
+            return "(" + x + ", " + y + ")";
         }
     }
     
     public class Move {
         
-        int direction;
-        boolean boxPushed;
+        private final int direction;
+        private final boolean boxPushed;
         
         public Move(int dir, boolean push) {
             direction = dir;
