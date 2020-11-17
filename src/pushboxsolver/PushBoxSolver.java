@@ -43,8 +43,6 @@ public final class PushBoxSolver {
     final int UP    = 2;
     final int LEFT  = 3;
     final int DOWN  = 4;
-    
-    Configuration currConfig;
 
     public static void main(String[] args) {
         PushBoxSolver pbs = new PushBoxSolver();
@@ -79,12 +77,11 @@ public final class PushBoxSolver {
         }
         
         // Add staring configuration to history
-        Configuration startingConfig = new Configuration(player);
+        Configuration startingConfig = new Configuration(player, 0);
         boxes.forEach((box) -> { startingConfig.addBox(box); });
         configHistory.add(startingConfig);
         
         // Initiate recursive solution
-        currConfig = this.getCurrConfig();
         solveGame();
     }
     
@@ -173,7 +170,7 @@ public final class PushBoxSolver {
         // check if move is valid (no wall, no trap, no loop)
         if(isType(l1, SPACE) || isType(l1, DEST)) {                                                        // SITUATION 1: move player to empty space
             // create new config
-            Configuration config = getNewConfig(l1);
+            Configuration config = getNewConfig(l1, direction);
             
             // check if new config exists already
             if(!isPrevConfig(config)) {
@@ -229,7 +226,7 @@ public final class PushBoxSolver {
         } else if((isType(l1, DBOX) || isType(l1, BOX)) && 
                    isType(l2, DEST)) {                                                                    // SITUATION 2: push box to destination
             // create new config
-            Configuration config = getNewConfig(l1, l2);
+            Configuration config = getNewConfig(l1, l2, direction);
             
             // check if new config exists already
             if(!isPrevConfig(config)) {
@@ -314,7 +311,7 @@ public final class PushBoxSolver {
                  ((isType(l3, SPACE) || isType(l3, DEST)) ||                                              // SITUATION 3: push box to empty space (with parallel outlet)
                  ((isType(s1, SPACE) || isType(s1, DEST)) && (isType(s2, SPACE) || isType(s2, DEST))))) { // SITUATION 4: push box to empty space (with perpendicular outlet)
             // create new config
-            Configuration config = getNewConfig(l1, l2);
+            Configuration config = getNewConfig(l1, l2, direction);
             
             // check if new config exists already
             if(!isPrevConfig(config)) {
@@ -396,9 +393,9 @@ public final class PushBoxSolver {
     }
     
     public void printMoveHistory() {
-        for(Move m : moveHistory) {
+        moveHistory.forEach((m) -> {
             System.out.print(m);
-        }
+        });
         System.out.println();
     }
     
@@ -408,14 +405,11 @@ public final class PushBoxSolver {
      */
     public boolean popMoveFromHistory() {
         Move m = moveHistory.pop();
-        if(m.wasBoxPushed()) {
-            return true;
-        }
-        return false;
+        return m.wasBoxPushed();
     }
     
-    public Configuration getNewConfig(Location newPlayerLoc) {
-        Configuration newConfig = new Configuration(newPlayerLoc);
+    public Configuration getNewConfig(Location newPlayerLoc, int dir) {
+        Configuration newConfig = new Configuration(newPlayerLoc, dir);
         // add unmoved boxes
         for(Location box : boxes) {
             newConfig.addBox(box);
@@ -423,14 +417,12 @@ public final class PushBoxSolver {
         return newConfig;
     }
     
-    public Configuration getNewConfig(Location newPlayerLoc, Location newBoxLoc) {
-        Configuration newConfig = new Configuration(newPlayerLoc);
+    public Configuration getNewConfig(Location newPlayerLoc, Location newBoxLoc, int dir) {
+        Configuration newConfig = new Configuration(newPlayerLoc, dir);
         // add unmoved boxes
-        for(Location box : boxes) {
-            if(!newPlayerLoc.equals(box)) {
-                newConfig.addBox(box);
-            }
-        }
+        boxes.stream().filter((box) -> (!newPlayerLoc.equals(box))).forEachOrdered((box) -> {
+            newConfig.addBox(box);
+        });
         // add moved box
         newConfig.addBox(newBoxLoc);
         return newConfig;
@@ -451,12 +443,7 @@ public final class PushBoxSolver {
     }
     
     public boolean isDestination(Location loc) {
-        for(Location dest : destinations) {
-            if(dest.equals(loc)) {
-                return true;
-            }
-        }
-        return false;
+        return destinations.stream().anyMatch((dest) -> (dest.equals(loc)));
     }
     
     public void addConfigToHistory(Configuration config) {
@@ -469,19 +456,14 @@ public final class PushBoxSolver {
     }
     
     public boolean isPrevConfig(Configuration config) {
-        for(Configuration c : configHistory) {
-            if(c.equals(config)) {
-                return true;
-            }
-        }
-        return false;
+        return configHistory.stream().anyMatch((c) -> (c.equals(config)));
     }
     
-    public Configuration getCurrConfig() {
-        Configuration curr = new Configuration(player);
-        for(Location loc : boxes) {
+    public Configuration getCurrConfig(int dir) {
+        Configuration curr = new Configuration(player, dir);
+        boxes.forEach((loc) -> {
             curr.addBox(loc);
-        }
+        });
         return curr;
     }
     
@@ -518,10 +500,12 @@ public final class PushBoxSolver {
     }
     
     public class Configuration {
+        private final int direction;
         private final Location player;
         private final LinkedList<Location> boxes;
         
-        public Configuration(Location player) {
+        public Configuration(Location player, int dir) {
+            this.direction = dir;
             this.player = player.clone();
             boxes = new LinkedList<>();
         }
@@ -543,6 +527,10 @@ public final class PushBoxSolver {
             return boxes;
         }
         
+        public int getDirection() {
+            return direction;
+        }
+        
         public boolean contains(Location box) {
             return getBoxes().stream().anyMatch((b) -> (box.equals(b)));
         }
@@ -551,7 +539,9 @@ public final class PushBoxSolver {
             if(!config.getPlayer().equals(this.player)) {
                 return false;
             }
-            
+            if(config.getDirection() != this.direction) {
+                return false;
+            }
             return config.getBoxes().stream().noneMatch((box) -> (!this.contains(box)));
         }
         
