@@ -43,10 +43,11 @@ public final class PushBoxSolver {
     final int UP    = 2;
     final int LEFT  = 3;
     final int DOWN  = 4;
+    
+    Configuration currConfig;
 
     public static void main(String[] args) {
         PushBoxSolver pbs = new PushBoxSolver();
-        pbs.printGame("Starting Configuration:");
     }
     
     public PushBoxSolver() {
@@ -83,12 +84,21 @@ public final class PushBoxSolver {
         configHistory.add(startingConfig);
         
         // Initiate recursive solution
+        currConfig = this.getCurrConfig();
         solveGame();
     }
     
     public void solveGame() {
+        printGame("Starting Configuration");
         // recursively try all four directions for each move
-        solveGameHelper(new Location(player.getX()+1, player.getY())); // send player to the RIGHT
+        solveGameHelper(new Location(player.getX()+1, player.getY()  )); // send player to RIGHT
+        solveGameHelper(new Location(player.getX()-1, player.getY()  )); // send player to LEFT
+        solveGameHelper(new Location(player.getX()  , player.getY()+1)); // send player to DOWN
+        solveGameHelper(new Location(player.getX()  , player.getY()-1)); // send player to UP
+    }
+    
+    public void pauseBreak() {
+        System.out.println("STOP!");
     }
     
     /**
@@ -96,6 +106,16 @@ public final class PushBoxSolver {
      * @param l1 next location of the player
      */
     public void solveGameHelper(Location l1) {
+//        if(!currConfig.equals(this.getCurrConfig())) {
+//            //printGame("" + this.configHistory.size());
+//            printMoveHistory();
+//            currConfig = this.getCurrConfig();
+//        }
+        
+//        if(configHistory.size()==5931) {
+//            pauseBreak();
+//            printGame("Config 5931");
+//        }
         // establish direction
         int xDiff = l1.getX() - player.getX();
         int yDiff = l1.getY() - player.getY();
@@ -151,7 +171,7 @@ public final class PushBoxSolver {
          * _____________________
          */
         // check if move is valid (no wall, no trap, no loop)
-        if(isType(l1, SPACE) || isType(l1, DEST)) {         // SITUATION 1: move player to empty space
+        if(isType(l1, SPACE) || isType(l1, DEST)) {                                                        // SITUATION 1: move player to empty space
             // create new config
             Configuration config = getNewConfig(l1);
             
@@ -159,7 +179,7 @@ public final class PushBoxSolver {
             if(!isPrevConfig(config)) {
                 
                 // add config to history  (linked list)
-                addPrevConfig(config);
+                addConfigToHistory(config);
                 
                 // add move to history (stack)
                 moveHistory.add(new Move(direction, false));
@@ -207,7 +227,7 @@ public final class PushBoxSolver {
                 player.setXY(pl.getX(), pl.getY());
             }
         } else if((isType(l1, DBOX) || isType(l1, BOX)) && 
-                   isType(l2, DEST)) {                       // SITUATION 2: push box to destination
+                   isType(l2, DEST)) {                                                                    // SITUATION 2: push box to destination
             // create new config
             Configuration config = getNewConfig(l1, l2);
             
@@ -215,7 +235,7 @@ public final class PushBoxSolver {
             if(!isPrevConfig(config)) {
                 
                 // add config to history  (linked list)
-                addPrevConfig(config);
+                addConfigToHistory(config);
                 
                 // add move to history (stack)
                 moveHistory.add(new Move(direction, true));
@@ -247,6 +267,11 @@ public final class PushBoxSolver {
                     }
                 }
                 
+                if(this.isGameOver()) {
+                    printMoveHistory();
+                    System.exit(0);
+                }
+                
                 // recursively call the next three directions (searching for a solution)
                 solveGameHelper(d1);
                 solveGameHelper(d2);
@@ -255,7 +280,7 @@ public final class PushBoxSolver {
                 // back out of this direction (i.e. one of the above paths did not result in a solution)
                 
                 // pop move off history (stack)
-                moveHistory.add(new Move(direction, true));
+                popMoveFromHistory();
                 
                 // revert new box location on gameboard
                 gameBoard[l2.getY()][l2.getX()] = DEST;
@@ -284,18 +309,97 @@ public final class PushBoxSolver {
                     }
                 }
             }
-        } else if(isType(l1, BOX  ) && 
-                  isType(l2, SPACE) && 
-                 (isType(l3, SPACE) || isType(l3, DEST))) { // SITUATION 3: push box to empty space (with parallel outlet)
+        } else if((isType(l1, DBOX) || isType(l1, BOX)) && 
+                   isType(l2, SPACE) && 
+                 ((isType(l3, SPACE) || isType(l3, DEST)) ||                                              // SITUATION 3: push box to empty space (with parallel outlet)
+                 ((isType(s1, SPACE) || isType(s1, DEST)) && (isType(s2, SPACE) || isType(s2, DEST))))) { // SITUATION 4: push box to empty space (with perpendicular outlet)
+            // create new config
+            Configuration config = getNewConfig(l1, l2);
             
-        } else if(isType(l1, BOX  ) && 
-                  isType(l2, SPACE) && 
-                 (isType(s1, SPACE) || isType(s1, DEST)) && 
-                 (isType(s2, SPACE) || isType(s2, DEST))) { // SITUATION 4: push box to empty space (with perpendicular outlet)
-            
-        } else {
-            return;
+            // check if new config exists already
+            if(!isPrevConfig(config)) {
+                
+                // add config to history  (linked list)
+                addConfigToHistory(config);
+                
+                // add move to history (stack)
+                moveHistory.add(new Move(direction, true));
+                
+                // update new box location on gameboard
+                gameBoard[l2.getY()][l2.getX()] = BOX;
+                // update new player location on gameboard
+                if(isType(l1, DBOX)) {
+                    gameBoard[l1.getY()][l1.getX()] = DPLAYER;
+                    boxesAtDest--;
+                } else {
+                    gameBoard[l1.getY()][l1.getX()] = PLAYER;
+                }
+                // update old player location on gameboard
+                if(isType(pl, DPLAYER)) {
+                    gameBoard[pl.getY()][pl.getX()] = DEST;
+                } else {
+                    gameBoard[pl.getY()][pl.getX()] = SPACE;
+                }
+                
+                // update player location
+                player.setXY(l1.getX(), l1.getY());
+                // update box location
+                for(Location box : boxes) {
+                    if(box.equals(l1)) {
+                        box.setXY(l2.getX(), l2.getY());
+                        break;
+                    }
+                }
+                
+                if(this.isGameOver()) {
+                    printMoveHistory();
+                    System.exit(0);
+                }
+                
+                // recursively call the next three directions (searching for a solution)
+                solveGameHelper(d1);
+                solveGameHelper(d2);
+                solveGameHelper(l2);
+                
+                // back out of this direction (i.e. one of the above paths did not result in a solution)
+                
+                // pop move off history (stack)
+                popMoveFromHistory();
+                
+                // revert new box location on gameboard
+                gameBoard[l2.getY()][l2.getX()] = SPACE;
+                // revert new player location on gameboard
+                if(isType(l1, DPLAYER)) {
+                    gameBoard[l1.getY()][l1.getX()] = DBOX;
+                    boxesAtDest++;
+                } else {
+                    gameBoard[l1.getY()][l1.getX()] = BOX;
+                }
+                // revert old player location on gameboard
+                if(isType(pl, DEST)) {
+                    gameBoard[pl.getY()][pl.getX()] = DPLAYER;
+                } else {
+                    gameBoard[pl.getY()][pl.getX()] = PLAYER;
+                }
+                
+                // revert player location
+                player.setXY(pl.getX(), pl.getY());
+                // update box location
+                for(Location box : boxes) {
+                    if(box.equals(l2)) {
+                        box.setXY(l1.getX(), l1.getY());
+                        break;
+                    }
+                }
+            }
         }
+    }
+    
+    public void printMoveHistory() {
+        for(Move m : moveHistory) {
+            System.out.print(m);
+        }
+        System.out.println();
     }
     
     /**
@@ -355,7 +459,7 @@ public final class PushBoxSolver {
         return false;
     }
     
-    public void addPrevConfig(Configuration config) {
+    public void addConfigToHistory(Configuration config) {
         for(Configuration c : configHistory) {
             if(c.equals(config)) {
                 return;
@@ -378,7 +482,7 @@ public final class PushBoxSolver {
         for(Location loc : boxes) {
             curr.addBox(loc);
         }
-        return null;
+        return curr;
     }
     
     public Location getBox(int x, int y) {
@@ -394,9 +498,16 @@ public final class PushBoxSolver {
         return boxesAtDest == boxes.size();
     }
     
+//    final int WALL    = 0;
+//    final int SPACE   = 1; // free (unoccupied) space
+//    final int BOX     = 2;
+//    final int DEST    = 3; // destination
+//    final int PLAYER  = 4;
+//    final int DBOX    = 5; // box at destination
+//    final int DPLAYER = 6; // player at destination
     public void printGame(String title) {
         System.out.println(title);
-        String pieces = "# XOP";
+        String pieces = "# XOP@&";
         for (int y = 0; y < gameBoard.length; y++) {
             for (int x = 0; x < gameBoard[y].length; x++) {
                 System.out.print(pieces.charAt(gameBoard[y][x]) + " ");
@@ -515,6 +626,20 @@ public final class PushBoxSolver {
         
         public boolean wasBoxPushed() {
             return boxPushed;
+        }
+        
+        @Override
+        public String toString() {
+            switch(direction) {
+                case UP:
+                    return "U";
+                case DOWN:
+                    return "D";
+                case LEFT:
+                    return "L";
+                default:
+                    return "R";
+            }
         }
     }
 }
