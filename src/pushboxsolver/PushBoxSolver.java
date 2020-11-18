@@ -34,7 +34,7 @@ public final class PushBoxSolver {
     private Location player;
     private LinkedList<Location> boxes;
     private LinkedList<Location> destinations;
-    private final LinkedList<Configuration> configHistory;
+    //private final LinkedList<Configuration> configHistory;
     private final Stack<Move> moveHistory;
     private int boxesAtDest = 0;
     
@@ -43,6 +43,9 @@ public final class PushBoxSolver {
     final int UP    = 2;
     final int LEFT  = 3;
     final int DOWN  = 4;
+    
+    // Maximum depth of move history
+    final int MAX_DEPTH = 85;
 
     public static void main(String[] args) {
         PushBoxSolver pbs = new PushBoxSolver();
@@ -55,7 +58,7 @@ public final class PushBoxSolver {
         
         // Initialize variables
         moveHistory   = new Stack<>();
-        configHistory = new LinkedList<>();
+        //configHistory = new LinkedList<>();
         boxes         = new LinkedList<>();
         destinations  = new LinkedList<>();
         
@@ -79,7 +82,7 @@ public final class PushBoxSolver {
         // Add staring configuration to history
         Configuration startingConfig = new Configuration(player, 0);
         boxes.forEach((box) -> { startingConfig.addBox(box); });
-        configHistory.add(startingConfig);
+        //configHistory.add(startingConfig);
         
         // Initiate recursive solution
         solveGame();
@@ -87,11 +90,14 @@ public final class PushBoxSolver {
     
     public void solveGame() {
         printGame("Starting Configuration");
+        
+        System.out.println("Please wait... generating solution.");
         // recursively try all four directions for each move
         solveGameHelper(new Location(player.getX()+1, player.getY()  )); // send player to RIGHT
         solveGameHelper(new Location(player.getX()-1, player.getY()  )); // send player to LEFT
         solveGameHelper(new Location(player.getX()  , player.getY()+1)); // send player to DOWN
         solveGameHelper(new Location(player.getX()  , player.getY()-1)); // send player to UP
+//        System.out.println("Total configurations explored: " + configHistory.size());
     }
     
     public void pauseBreak() {
@@ -103,6 +109,9 @@ public final class PushBoxSolver {
      * @param l1 next location of the player
      */
     public void solveGameHelper(Location l1) {
+        if(moveHistory.size() > MAX_DEPTH) return;
+        
+        //printMoveHistory();
 //        if(!currConfig.equals(this.getCurrConfig())) {
 //            //printGame("" + this.configHistory.size());
 //            printMoveHistory();
@@ -173,10 +182,10 @@ public final class PushBoxSolver {
             Configuration config = getNewConfig(l1, direction);
             
             // check if new config exists already
-            if(!isPrevConfig(config)) {
+//            if(!isPrevConfig(config)) {
                 
                 // add config to history  (linked list)
-                addConfigToHistory(config);
+//                addConfigToHistory(config);
                 
                 // add move to history (stack)
                 moveHistory.add(new Move(direction, false));
@@ -222,17 +231,17 @@ public final class PushBoxSolver {
                 
                 // revert player location
                 player.setXY(pl.getX(), pl.getY());
-            }
+//            }
         } else if((isType(l1, DBOX) || isType(l1, BOX)) && 
                    isType(l2, DEST)) {                                                                    // SITUATION 2: push box to destination
             // create new config
             Configuration config = getNewConfig(l1, l2, direction);
             
             // check if new config exists already
-            if(!isPrevConfig(config)) {
+//            if(!isPrevConfig(config)) {
                 
                 // add config to history  (linked list)
-                addConfigToHistory(config);
+//                addConfigToHistory(config);
                 
                 // add move to history (stack)
                 moveHistory.add(new Move(direction, true));
@@ -305,7 +314,7 @@ public final class PushBoxSolver {
                         break;
                     }
                 }
-            }
+//            }
         } else if((isType(l1, DBOX) || isType(l1, BOX)) && 
                    isType(l2, SPACE) && 
                  ((isType(l3, SPACE) || isType(l3, DEST)) ||                                              // SITUATION 3: push box to empty space (with parallel outlet)
@@ -314,10 +323,10 @@ public final class PushBoxSolver {
             Configuration config = getNewConfig(l1, l2, direction);
             
             // check if new config exists already
-            if(!isPrevConfig(config)) {
+//            if(!isPrevConfig(config)) {
                 
                 // add config to history  (linked list)
-                addConfigToHistory(config);
+//                addConfigToHistory(config);
                 
                 // add move to history (stack)
                 moveHistory.add(new Move(direction, true));
@@ -388,7 +397,7 @@ public final class PushBoxSolver {
                         break;
                     }
                 }
-            }
+//            }
         }
     }
     
@@ -411,9 +420,9 @@ public final class PushBoxSolver {
     public Configuration getNewConfig(Location newPlayerLoc, int dir) {
         Configuration newConfig = new Configuration(newPlayerLoc, dir);
         // add unmoved boxes
-        for(Location box : boxes) {
+        boxes.forEach((box) -> {
             newConfig.addBox(box);
-        }
+        });
         return newConfig;
     }
     
@@ -446,18 +455,18 @@ public final class PushBoxSolver {
         return destinations.stream().anyMatch((dest) -> (dest.equals(loc)));
     }
     
-    public void addConfigToHistory(Configuration config) {
-        for(Configuration c : configHistory) {
-            if(c.equals(config)) {
-                return;
-            }
-        }
-        configHistory.add(config);
-    }
+//    public void addConfigToHistory(Configuration config) {
+//        for(Configuration c : configHistory) {
+//            if(c.equals(config)) {
+//                return;
+//            }
+//        }
+//        configHistory.add(config);
+//    }
     
-    public boolean isPrevConfig(Configuration config) {
-        return configHistory.stream().anyMatch((c) -> (c.equals(config)));
-    }
+//    public boolean isPrevConfig(Configuration config) {
+//        return configHistory.stream().anyMatch((c) -> (c.equals(config)));
+//    }
     
     public Configuration getCurrConfig(int dir) {
         Configuration curr = new Configuration(player, dir);
@@ -490,9 +499,9 @@ public final class PushBoxSolver {
     public void printGame(String title) {
         System.out.println(title);
         String pieces = "# XOP@&";
-        for (int y = 0; y < gameBoard.length; y++) {
-            for (int x = 0; x < gameBoard[y].length; x++) {
-                System.out.print(pieces.charAt(gameBoard[y][x]) + " ");
+        for (int[] gameBoard1 : gameBoard) {
+            for (int x = 0; x < gameBoard1.length; x++) {
+                System.out.print(pieces.charAt(gameBoard1[x]) + " ");
             }
             System.out.println();
         }
@@ -506,7 +515,7 @@ public final class PushBoxSolver {
         
         public Configuration(Location player, int dir) {
             this.direction = dir;
-            this.player = player.clone();
+            this.player = player.makeCopy();
             boxes = new LinkedList<>();
         }
         
@@ -516,7 +525,7 @@ public final class PushBoxSolver {
                     return; // already added
                 }
             }
-            boxes.add(box.clone());
+            boxes.add(box.makeCopy());
         }
         
         public Location getPlayer() {
@@ -589,8 +598,7 @@ public final class PushBoxSolver {
             return loc.getX() == x && loc.getY() == y;
         }
         
-        @Override
-        public Location clone() {
+        public Location makeCopy() {
             return new Location(x, y);
         }
         
