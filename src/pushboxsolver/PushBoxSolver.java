@@ -1,6 +1,7 @@
 package pushboxsolver;
 
 import java.util.LinkedList;
+import java.util.Random;
 import java.util.Stack;
 
 /**
@@ -17,6 +18,7 @@ public final class PushBoxSolver {
     final int PLAYER  = 4;
     final int DBOX    = 5; // box at destination
     final int DPLAYER = 6; // player at destination
+    int count = 0;
     
     private int[][] gameBoard = {
                                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -44,6 +46,8 @@ public final class PushBoxSolver {
     final int LEFT  = 3;
     final int DOWN  = 4;
     
+    Random rand;
+    
     // Maximum depth of move history
     final int MAX_DEPTH = 85;
 
@@ -52,6 +56,7 @@ public final class PushBoxSolver {
     }
     
     public PushBoxSolver() {
+        rand = new Random();
         int playerCount = 0;
         int boxCount = 0;
         int destCount = 0;
@@ -112,16 +117,13 @@ public final class PushBoxSolver {
         if(moveHistory.size() > MAX_DEPTH) return;
         
         //printMoveHistory();
-//        if(!currConfig.equals(this.getCurrConfig())) {
-//            //printGame("" + this.configHistory.size());
-//            printMoveHistory();
-//            currConfig = this.getCurrConfig();
-//        }
+        count++;
+        if(count % 1000000 == 0) {
+            this.printGame("Count: " + count);
+            this.printMoveHistory();
+        }
         
-//        if(configHistory.size()==5931) {
-//            pauseBreak();
-//            printGame("Config 5931");
-//        }
+        
         // establish direction
         int xDiff = l1.getX() - player.getX();
         int yDiff = l1.getY() - player.getY();
@@ -182,13 +184,13 @@ public final class PushBoxSolver {
             Configuration config = getNewConfig(l1, direction);
             
             // check if new config exists already
-//            if(!isPrevConfig(config)) {
+            if(!isPrevConfig(config)) {
                 
                 // add config to history  (linked list)
 //                addConfigToHistory(config);
                 
                 // add move to history (stack)
-                moveHistory.add(new Move(direction, false));
+                moveHistory.add(new Move(direction, false, config));
                 
                 // update new player location on gameboard
                 if(isType(l1, DEST)) {
@@ -206,10 +208,8 @@ public final class PushBoxSolver {
                 // update player location
                 player.setXY(l1.getX(), l1.getY());
                 
-                // recursively call the next three directions (searching for a solution)
-                solveGameHelper(d1);
-                solveGameHelper(d2);
-                solveGameHelper(l2);
+                // try next three directions
+                randomRecurse(d1, d2, l2);
                 
                 // back out of this direction (i.e. one of the above paths did not result in a solution)
                 
@@ -231,20 +231,20 @@ public final class PushBoxSolver {
                 
                 // revert player location
                 player.setXY(pl.getX(), pl.getY());
-//            }
+            }
         } else if((isType(l1, DBOX) || isType(l1, BOX)) && 
                    isType(l2, DEST)) {                                                                    // SITUATION 2: push box to destination
             // create new config
             Configuration config = getNewConfig(l1, l2, direction);
             
             // check if new config exists already
-//            if(!isPrevConfig(config)) {
+            if(!isPrevConfig(config)) {
                 
                 // add config to history  (linked list)
 //                addConfigToHistory(config);
                 
                 // add move to history (stack)
-                moveHistory.add(new Move(direction, true));
+                moveHistory.add(new Move(direction, true, config));
                 
                 // update new box location on gameboard
                 gameBoard[l2.getY()][l2.getX()] = DBOX;
@@ -278,10 +278,8 @@ public final class PushBoxSolver {
                     System.exit(0);
                 }
                 
-                // recursively call the next three directions (searching for a solution)
-                solveGameHelper(d1);
-                solveGameHelper(d2);
-                solveGameHelper(l2);
+                // try next three directions
+                randomRecurse(d1, d2, l2);
                 
                 // back out of this direction (i.e. one of the above paths did not result in a solution)
                 
@@ -314,7 +312,7 @@ public final class PushBoxSolver {
                         break;
                     }
                 }
-//            }
+            }
         } else if((isType(l1, DBOX) || isType(l1, BOX)) && 
                    isType(l2, SPACE) && 
                  ((isType(l3, SPACE) || isType(l3, DEST)) ||                                              // SITUATION 3: push box to empty space (with parallel outlet)
@@ -323,13 +321,13 @@ public final class PushBoxSolver {
             Configuration config = getNewConfig(l1, l2, direction);
             
             // check if new config exists already
-//            if(!isPrevConfig(config)) {
+            if(!isPrevConfig(config)) {
                 
                 // add config to history  (linked list)
 //                addConfigToHistory(config);
                 
                 // add move to history (stack)
-                moveHistory.add(new Move(direction, true));
+                moveHistory.add(new Move(direction, true, config));
                 
                 // update new box location on gameboard
                 gameBoard[l2.getY()][l2.getX()] = BOX;
@@ -362,10 +360,8 @@ public final class PushBoxSolver {
                     System.exit(0);
                 }
                 
-                // recursively call the next three directions (searching for a solution)
-                solveGameHelper(d1);
-                solveGameHelper(d2);
-                solveGameHelper(l2);
+                // try next three directions
+                randomRecurse(d1, d2, l2);
                 
                 // back out of this direction (i.e. one of the above paths did not result in a solution)
                 
@@ -397,7 +393,42 @@ public final class PushBoxSolver {
                         break;
                     }
                 }
-//            }
+            }
+        }
+    }
+    
+    public void randomRecurse(Location l1, Location l2, Location l3) {
+        // recursively (in random order) call the next three directions
+        switch(rand.nextInt(6)) {
+            case 0:
+                solveGameHelper(l1);
+                solveGameHelper(l2);
+                solveGameHelper(l3);
+                break;
+            case 1:
+                solveGameHelper(l1);
+                solveGameHelper(l3);
+                solveGameHelper(l2);
+                break;
+            case 2:
+                solveGameHelper(l2);
+                solveGameHelper(l1);
+                solveGameHelper(l3);
+                break;
+            case 3:
+                solveGameHelper(l2);
+                solveGameHelper(l3);
+                solveGameHelper(l1);
+                break;
+            case 4:
+                solveGameHelper(l3);
+                solveGameHelper(l1);
+                solveGameHelper(l2);
+                break;
+            default:
+                solveGameHelper(l3);
+                solveGameHelper(l2);
+                solveGameHelper(l1);
         }
     }
     
@@ -405,7 +436,7 @@ public final class PushBoxSolver {
         moveHistory.forEach((m) -> {
             System.out.print(m);
         });
-        System.out.println();
+        System.out.println(" (" + moveHistory.size() + ")");
     }
     
     /**
@@ -464,9 +495,9 @@ public final class PushBoxSolver {
 //        configHistory.add(config);
 //    }
     
-//    public boolean isPrevConfig(Configuration config) {
-//        return configHistory.stream().anyMatch((c) -> (c.equals(config)));
-//    }
+    public boolean isPrevConfig(Configuration config) {
+        return moveHistory.stream().anyMatch((m) -> (m.getConfig().equals(config)));
+    }
     
     public Configuration getCurrConfig(int dir) {
         Configuration curr = new Configuration(player, dir);
@@ -612,10 +643,12 @@ public final class PushBoxSolver {
         
         private final int direction;
         private final boolean boxPushed;
+        private final Configuration config;
         
-        public Move(int dir, boolean push) {
+        public Move(int dir, boolean push, Configuration con) {
             direction = dir;
             boxPushed = push;
+            config = con;
         }
         
         public int getDirection() {
@@ -624,6 +657,10 @@ public final class PushBoxSolver {
         
         public boolean wasBoxPushed() {
             return boxPushed;
+        }
+        
+        public Configuration getConfig() {
+            return config;
         }
         
         @Override
